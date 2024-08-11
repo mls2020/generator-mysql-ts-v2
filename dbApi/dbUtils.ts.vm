@@ -32,7 +32,7 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
   const list =
     <T>(table: string, fields: string[]) =>
     async (filter: Partial<T>) => {
-      const argNames = ingersection(fields,getArgNames(filter));
+      const argNames = intersection(fields,getArgNames(filter));
       const whereClause = getWhereClause(argNames);
       const fieldsClause = fields?.length ? fields.map((f) => `\`${f}\``).join(",") : "*";
       const sql = `select ${fieldsClause} from \`${table}\` ${whereClause} `;
