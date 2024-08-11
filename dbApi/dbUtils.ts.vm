@@ -69,8 +69,11 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
       const updNames = intersection(fields, getArgNames(updates));
       if (!updNames?.length) {
         throw Error(`update object is not valid`);
+      
       }
-      const setClause = ` set ${updNames.map((n) => `\`${n}\`=?`).join(",")}`;
+      const strUpdNames = updNames.map((n) => `\`${n}\`=?`).join(",")
+      const setClause = ` set ${strUpdNames;
+
       const whereClause = getWhereClause(argNames);
       const sql = `update \`${table}\`  ${setClause} ${whereClause} `;
       const argValues = getArgValues(filter, argNames) ?? [];
