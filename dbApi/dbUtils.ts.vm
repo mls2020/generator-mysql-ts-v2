@@ -55,7 +55,9 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
     async (element: Partial<T>) => {
       const fieldNames = intersection(fields, getArgNames(element));
       const argValues = getArgValues(element, fieldNames) ?? [];
-      const sql = `insert into \`${table}\` (${fieldNames.map((f) => `\`${f}\``).join(",")}) values (${argValues.map(() => "?").join(",")})`;
+      const strFields =  fieldNames.map((f) => `\`${f}\``).join(",")
+      const strValues = argValues.map(() => "?").join(",")
+      const sql = `insert into \`${table}\` (${strFields}) values (${strValues})`;
       return await runSql<T>(sql, argValues);
     };
 
