@@ -92,8 +92,8 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
     <A, T>(proc: string, ...argNames: string[]) =>
     async (args: A) => {
       const argValues = getArgValues(args, argNames) ?? [];
-      const argsPlaceholders = argNames?.length ? `(${argNames.map(() => "?").join(",")})` : "";
-      const sql = `call \`${proc}\` ${argsPlaceholders}`;
+      const strArgsPlaceholders = argNames?.length ? argNames.map(() => "?").join(",")i : ""
+      const sql = `call \`${proc}\` (${strArgsPlaceholders})`;
       return await runSql<T>(sql, argValues);
     };
   return {
