@@ -1,4 +1,4 @@
-import { DbUtils } from "./dbUtils.ts.vm";
+import { DbUtils } from "./dbUtils";
 import * as I from "./interfaces";
 
 export type DbProxy = ReturnType<typeof createDbProxy>;
