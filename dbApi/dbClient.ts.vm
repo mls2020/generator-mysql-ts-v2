@@ -47,7 +47,7 @@ const createRunSql =
           logger.error(JSON.stringify(err));
           rej(err);
         }
-        const msg = `SQL | ${sql.trim()} | ${args ?? ""}`;
+        const msg = `SQL | ${sql.trim()} | ${args || ""}`;
         connection.query(sql, args, (err, rows) => {
           const endTime = performance.now();
           const duration = Math.round(endTime - startTime);
