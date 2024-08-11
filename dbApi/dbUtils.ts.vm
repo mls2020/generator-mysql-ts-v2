@@ -23,9 +23,10 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
 
   const getWhereClause = (argNames: string[] | undefined) => {
     if (argNames) {
-      return  ` where ${argNames.map((n)) => ` \`${n}\`=?`).join(" AND ")}`
+      const str = argNames.map((n)=> ` \`${n}\`=?`).join(" AND ")}
+      return  ` where ${str}`
     } 
-    return '' 
+    return "" 
   };
 
   const list =
