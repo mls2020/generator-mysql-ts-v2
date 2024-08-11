@@ -1,0 +1,96 @@
+// ${name} v${version}
+// tslint:disable
+
+import axios, { AxiosInstance } from 'axios';
+import * as I from './interfaces';
+export {I as interfaces};
+
+let query = (params:any)=> Object.keys(params)
+            .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+            .join('&');
+
+export class RestClient {
+    private rootUrl:string;
+    private token:string = '';
+    private _axios: AxiosInstance;
+
+    constructor(rootUrl:string,timeout=10000) {
+        this.rootUrl = rootUrl || '';
+        this._axios = axios.create({
+            baseURL: rootUrl || '',
+            timeout,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            }
+        })
+    }
+
+    private fetch<T>(verb: 'GET' | 'PUT' | 'POST' | 'DELETE', url: string, qs: any | undefined, body: any | undefined) {
+        const queryString = qs ? query(qs) : ''
+        return this._axios({
+            url: '/api/v1' + url + '?' + queryString,
+            method: verb,
+            data: body,
+            headers: {
+                'token': this.token
+            }
+        }).then(r => {
+            return r.data as T
+        })
+
+    }
+
+    public performGet<T>(url:string, qs:any) {
+        return this.fetch<T>('GET',url,qs,undefined);
+    }
+    public performPost<T>(url:string, data:any) {
+        return this.fetch<T>('POST',url, undefined,data);
+    }
+    public performPut<T>(url:string, data:any) {
+        return this.fetch<T>('PUT',url, undefined,data);
+    }
+    public performDelete<T>(url:string, qs:any) {
+        return this.fetch<T>('DELETE',url, qs, undefined);
+    }
+
+    public setToken = (token:string) => this.token=token;
+
+#foreach($table in $tables)
+//Table $table.name
+    ${table.name}List = (filter?:I.${table.name}Filter) => {
+        return this.fetch<I.Result<I.${table.name}DTO[]>> (
+            'GET', '/${table.name}', filter, undefined 
+        );
+    }
+    ${table.name}Get = (${table.keyName}: ${table.keyType}) => {
+        return this.fetch<I.Result<I.${table.name}DTO>> (
+            'GET', `/${table.name}/${${table.keyName}}`, undefined, undefined 
+        );
+    }
+    ${table.name}Insert = (${table.name}: Partial<I.${table.name}DTO>) => {
+        return this.fetch<I.Result<I.${table.name}DTO>> (
+            'POST', `/${table.name}`, undefined, ${table.name} 
+        );
+    }
+    ${table.name}Update = (${table.name}: Partial<I.${table.name}DTO>) => {
+        return this.fetch<I.Result<I.${table.name}DTO>> (
+            'PUT', `/${table.name}/${${table.name}.${table.keyName}}`, undefined, ${table.name} 
+        );
+    }
+    ${table.name}Delete = (${table.keyName}: ${table.keyType}) => {
+        return this.fetch<I.Result<I.MySQLResult>> (
+            'DELETE', `/${table.name}/${${table.keyName}}`, undefined, undefined 
+        );
+    }
+
+#end
+#foreach($proc in $procedures)
+    action_${proc.name} = (filter:I.${proc.name}Parms) => {
+        return this.fetch<I.Result<I.${proc.name}DTO[]>> (
+            'POST', '/action/${proc.name}',  undefined, filter 
+        );
+    }
+#end
+
+}

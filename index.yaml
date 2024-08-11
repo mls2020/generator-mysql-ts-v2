@@ -6,3 +6,6 @@ scope:
     "dbRouter.ts": "dbApi/dbRouter.ts.vm"
     "dbServices.ts": "dbApi/dbServices.ts.vm"
     "dbUtils.ts": "dbApi/dbUtils.ts.vm"
+  restClient:
+    "interfaces.ts": "dbApi/interfaces.ts.vm"
+    "main.ts": "restClient/main.ts.vm"
