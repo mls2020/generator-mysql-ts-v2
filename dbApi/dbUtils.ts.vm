@@ -23,8 +23,8 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
 
   const getWhereClause = (argNames: string[] | undefined) => {
     if (argNames) {
-      const str = argNames.map((n)=> ` \`${n}\`=?`).join(" AND ")}
-      return  ` where ${str}`
+      const strWhere = argNames.map((n)=> ` \`${n}\`=?`).join(" AND ")
+      return  ` where ${strWhere}`
     } 
     return "" 
   };
@@ -71,7 +71,7 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
         throw Error(`update object is not valid`);
       
       }
-      const strupdNames = updNames.map((n) => `\`${n}\`=?`).join(",")
+      const strUpdNames = updNames.map((n) => `\`${n}\`=?`).join(",")
       const setClause = ` set ${strUpdNames} `
       const whereClause = getWhereClause(argNames);
       const sql = `update \`${table}\`  ${setClause} ${whereClause} `;
@@ -92,7 +92,7 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
     <A, T>(proc: string, ...argNames: string[]) =>
     async (args: A) => {
       const argValues = getArgValues(args, argNames) ?? [];
-      const strArgsPlaceholders = argNames?.length ? argNames.map(() => "?").join(",")i : ""
+      const strArgsPlaceholders = argNames?.length ? argNames.map(() => "?").join(",") : ""
       const sql = `call \`${proc}\` (${strArgsPlaceholders})`;
       return await runSql<T>(sql, argValues);
     };
