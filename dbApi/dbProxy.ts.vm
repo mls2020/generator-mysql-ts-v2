@@ -21,7 +21,7 @@ export function createDbProxy({ dbUtils }: { dbUtils: DbUtils }) {
         "${table.keyName}",
         [ 
         #foreach($field in ${table.columns})
-        "${$field.name}",
+        "${field.name}",
         #end
         ]),
       #end
