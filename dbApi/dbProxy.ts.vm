@@ -29,7 +29,7 @@ export function createDbProxy({ dbUtils }: { dbUtils: DbUtils }) {
     proc: {
       #foreach($proc in $procedures)
         ${proc.name}: dbUtils.execSp<I.${proc.name}Parms, I.${proc.name}DTO>(
-        "${proc.name},"
+        "${proc.name}",
         #foreach($parm in ${proc.parameters})
           "${parm.name}",
         #end
