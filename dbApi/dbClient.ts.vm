@@ -54,7 +54,7 @@ const createRunSql =
           const duration = Math.round(endTime - startTime);
           if (err) {
             logger.error(err);
-            logger.error(`${msg} ${JSON.stringify(err)} ${duration}ms`);
+            logger.error(`${msg} ${err.message} ${duration}ms`);
             rej(err);
           } else {
             let data = [] as T[];
