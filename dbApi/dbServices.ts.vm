@@ -1,0 +1,33 @@
+import { createDbClient, DbLogger } from "./dbClient";
+import { createDbProxy } from "./dbProxy";
+import { createDbRouter } from "./dbRouter";
+import { createDbUtils } from "./dbUtils";
+
+export type CreateDbServicesArgs = {
+  user: string;
+  password: string;
+  database: string;
+  host: string;
+  logger: DbLogger;
+};
+
+export function createDbServices({ user, password, database, host, logger }: CreateDbServicesArgs) {
+  const dbClient = createDbClient({
+    user,
+    password,
+    database,
+    host,
+    charset: "utf8mb4",
+    logger,
+  });
+
+  const { runSql } = dbClient;
+  const dbUtils = createDbUtils({ runSql, logger });
+  const dbProxy = createDbProxy({ dbUtils });
+  const dbRouter = createDbRouter({ dbProxy, logger });
+
+  return {
+    dbRouter,
+    dbProxy,
+  };
+}

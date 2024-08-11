@@ -1,0 +1,93 @@
+import { isArray } from "lodash";
+import mysql from "mysql";
+
+export type DbLogger = {
+  info: (...msg: any[]) => void;
+  debug: (...msg: any[]) => void;
+  error: (...msg: any[]) => void;
+  warn: (...msg: any[]) => void;
+  trace: (...msg: any[]) => void;
+};
+
+type CreateDbClientArgs = {
+  host: string;
+  user: string;
+  database: string;
+  password: string;
+  charset: string;
+  logger: DbLogger;
+};
+
+export function createDbClient({ host, user, database, password, charset, logger }: CreateDbClientArgs) {
+  const pool = mysql.createPool({
+    connectionLimit: 10,
+    multipleStatements: true,
+    host,
+    user,
+    password,
+    database,
+    charset,
+  });
+
+  return {
+    pool,
+    runSql: createRunSql({ pool, logger }),
+  };
+}
+
+export type RunSql = ReturnType<typeof createRunSql>;
+
+const createRunSql =
+  ({ pool, logger }: { pool: mysql.Pool; logger: DbLogger }) =>
+  async <T>(sql: string, args: any[]) => {
+    const startTime = performance.now();
+    return new Promise<{ data: T[]; sql: string; args: string[]; result: any }>((res, rej) => {
+      pool.getConnection((err, connection) => {
+        if (err) {
+          logger.error(JSON.stringify(err));
+          rej(err);
+        }
+        const msg = `SQL | ${sql.trim()} | ${args ?? ""}`;
+        connection.query(sql, args, (err, rows) => {
+          const endTime = performance.now();
+          const duration = Math.round(endTime - startTime);
+          if (err) {
+            logger.error(err);
+            logger.error(`${msg} ${JSON.stringify(err)} ${duration}ms`);
+            rej(err);
+          } else {
+            let data = [] as T[];
+            let result = {} as any;
+            const isResultArray = isArray(rows);
+            const isSelect = sql.trim().toLowerCase().startsWith("select");
+            if (isSelect) {
+              if (isResultArray) {
+                data = rows;
+                result = undefined;
+              } else {
+                result = rows;
+              }
+            } else {
+              if (isResultArray) {
+                data = rows[0];
+                result = rows[1];
+              } else {
+                result = rows;
+              }
+            }
+
+            const count = data?.length ?? result?.affectedRows ?? "no";
+            //logger.info({ isSelect, isResultArray, rows });
+            logger.debug(`${msg} | ${count} rows | ${duration}ms`);
+            res({
+              data,
+              result,
+              sql,
+              args,
+            });
+          }
+          connection.release();
+        });
+      });
+    });
+  };

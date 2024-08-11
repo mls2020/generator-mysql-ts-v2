@@ -1,0 +1,39 @@
+import { DbUtils } from "./dbUtils.ts.vm";
+import * as I from "./interfaces";
+
+export type DbProxy = ReturnType<typeof createDbProxy>;
+
+function mapTable<T>(name: string, dbUtils: DbUtils, keyName: string, fields: string[]) {
+  return {
+    list: dbUtils.list<T>(name),
+    get: dbUtils.get<T>(name),
+    update: dbUtils.update<T>(name, keyName, fields),
+    insert: dbUtils.insert<T>(name, fields),
+    delete: dbUtils.delete<T>(name, keyName),
+  };
+}
+
+export function createDbProxy({ dbUtils }: { dbUtils: DbUtils }) {
+  return {
+    tables: {
+      #foreach($table in $tables)
+        ${table.name}: mapTable<I.${table.name}DTO>("${table.name}", dbUtils, 
+        "${table.keyName}",
+        [ 
+        #foreach($field in ${table.columns})
+        "${$field.name}",
+        #end
+        ]),
+      #end
+      },
+    proc: {
+      #foreach($proc in $procedures)
+        ${proc.name}: dbUtils.execSp<I.${proc.name}Parms, I.${proc.name}DTO>(
+        #foreach($parm in ${proc.parameters})
+          "${parm.name}",
+        #end
+      ),
+      #end
+    }
+  };
+}

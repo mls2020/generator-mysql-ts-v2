@@ -1,0 +1,84 @@
+import express from "express";
+import { DbLogger } from "./dbClient";
+import { DbProxy } from "./dbProxy";
+
+export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: DbLogger }) {
+  //TABLES AUTOMAPPING
+  const router = express.Router();
+  const tableNames = Object.keys(dbProxy.tables);
+
+  for (const tableName of tableNames) {
+    // LIST
+    const mainPath = `/v1/${tableName}`;
+    logger.info(`registering: GET ${mainPath}`);
+    router.get(mainPath, async (req, res) => {
+      const itemArgs = { ...req.query, ...req.params };
+      try {
+        const func = (dbProxy as any).tables[tableName].list;
+        const result = await func(itemArgs);
+        res.json(result);
+      } catch (error) {
+        logger.error(error);
+        res.status(501).json(error);
+      }
+    });
+
+    logger.info(`registering: POST ${mainPath}`);
+    router.post(mainPath, async (req, res) => {
+      const itemArgs = req.body;
+      try {
+        const func = (dbProxy as any).tables[tableName].insert;
+        const result = await func(itemArgs);
+        res.json(result);
+      } catch (error) {
+        logger.error(error);
+        res.status(501).json(error);
+      }
+    });
+
+    const putPath = `${mainPath}/:id`;
+    logger.info(`registering: PUT ${putPath}`);
+    router.put(putPath, async (req, res) => {
+      const itemArgs = req.body;
+      try {
+        const func = (dbProxy as any).tables[tableName].update;
+        const result = await func(req.params.id, itemArgs);
+        res.json(result);
+      } catch (error) {
+        logger.error(error);
+        res.status(501).json(error);
+      }
+    });
+
+    logger.info(`registering: DELETE ${putPath}`);
+    router.delete(putPath, async (req, res) => {
+      try {
+        const func = (dbProxy as any).tables[tableName].delete;
+        const result = await func(req.params.id);
+        res.json(result);
+      } catch (error) {
+        logger.error(error);
+        res.status(501).json(error);
+      }
+    });
+  }
+
+  const procNames = Object.keys(dbProxy.proc);
+  for (const proc of procNames) {
+    const procPath = `/v1/action/${proc}`;
+    logger.info(`registering: POST ${procPath}`);
+    router.post(procPath, async (req, res) => {
+      const itemArgs = req.body;
+      try {
+        const func = (dbProxy as any).proc[proc];
+        const result = await func(itemArgs);
+        res.json(result);
+      } catch (error) {
+        logger.error(error);
+        res.status(501).json(error);
+      }
+    });
+  }
+
+  return router;
+}

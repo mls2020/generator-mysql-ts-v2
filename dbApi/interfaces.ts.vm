@@ -1,0 +1,86 @@
+// Interfaces
+// tslint:disable
+
+/* User configuration
+
+export interface ${user.tablename}ConfigDTO {
+    #foreach($field in ${user.config})
+        $field.name : ${field.type};
+    #end       
+}
+
+export interface ${user.tablename}DTO {
+    id: number,
+    user: string,
+    email: string,
+    config: ${user.tablename}ConfigDTO 
+}
+*/
+#foreach($table in $tables)
+//Table $table.name
+export interface ${table.name}DTO {
+    #foreach($field in ${table.columns})
+        $field.name : ${field.type};
+    #end        
+    #foreach($join in ${table.join})
+        #foreach($col in ${join.columns})
+        ${join.name}_${col.name} : ${col.type};
+        #end   
+    #end        
+}
+
+export interface ${table.name}Filter {
+    #foreach($field in ${table.columns})
+        #if( $field.type == 'string' )
+        ${field.name}Operator? : 'EQUAL'|'CONTAINS';
+        #elseif ($field.type == 'number')
+        ${field.name}Operator? : 'EQUAL'|'GT'|'LT'|'GTE'|'LTE';
+        #elseif ($field.type == 'boolean')
+        ${field.name}Operator? : 'EQUAL';
+        #end
+        ${field.name}? : ${field.type};
+    #end        
+}
+export type ${table.name}Result = Result<${table.name}DTO>
+export type ${table.name}ListResult = Result<${table.name}DTO[]>
+#end
+
+#foreach($proc in $procedures)
+//Procedure $proc.name
+export interface ${proc.name}Parms {
+    #foreach($parm in ${proc.parameters})
+        $parm.name : ${parm.type};
+    #end        
+}
+export interface ${proc.name}DTO 
+#if ($proc.inherit)
+    extends ${proc.inherit}DTO
+#end
+{
+    #foreach($parm in ${proc.columns})
+        $parm.name : ${parm.type};
+    #end        
+}
+export type ${proc.name}ListResult = Result<${proc.name}DTO[]>
+#end
+
+
+export interface MySQLResult {
+    "fieldCount": number,
+    "affectedRows": number,
+    "insertId": any, // TODO: FIX GENERATOR TO PROPERLY USE THE TYPE OF INSERT ID
+    "serverStatus": number,
+    "warningCount": number,
+    "message": string,
+    "protocol41": boolean,
+    "changedRows": number
+    }
+
+export interface Result<T> {
+    data:T,
+    sql: string,
+    args: any
+}
+
+
+

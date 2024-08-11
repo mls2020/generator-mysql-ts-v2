@@ -1,0 +1,99 @@
+import { intersection } from "lodash";
+import { DbLogger, RunSql } from "./dbClient";
+
+type CreateDbUtils = {
+  runSql: RunSql;
+  logger: DbLogger;
+};
+
+export type DbUtils = ReturnType<typeof createDbUtils>;
+
+export function createDbUtils({ runSql, logger }: CreateDbUtils) {
+  const getArgNames = (filter: any) => {
+    if (Object.keys(filter ?? {}).length) {
+      const argNames = Object.keys(filter);
+      return argNames;
+    }
+    return undefined;
+  };
+
+  const getArgValues = (filter: any, argNames: string[] | undefined) => {
+    return argNames?.map((k) => filter[k]);
+  };
+
+  const getWhereClause = (argNames: string[] | undefined) => {
+    return argNames ? ` where ${argNames.map((n) => ` \`${n}\`=?`).join(" AND ")}` : "";
+  };
+
+  const list =
+    <T>(table: string) =>
+    async (filter: Partial<T>, fields?: string[]) => {
+      const argNames = getArgNames(filter);
+      const whereClause = getWhereClause(argNames);
+      const fieldsClause = fields?.length ? fields.map((f) => `\`${f}\``).join(",") : "*";
+      const sql = `select ${fieldsClause} from \`${table}\` ${whereClause} `;
+      const argValues = getArgValues(filter, argNames);
+      return await runSql<T>(sql, argValues ?? []);
+    };
+
+  const get =
+    <T>(table: string) =>
+    async (filter: Partial<T>, fields?: string[]) => {
+      const ret = await list<T>(table)(filter, fields);
+      return {
+        ...ret,
+        data: ret.data[0],
+      };
+    };
+
+  const insert =
+    <T>(table: string, fields: string[]) =>
+    async (element: Partial<T>) => {
+      const fieldNames = intersection(fields, getArgNames(element));
+      const argValues = getArgValues(element, fieldNames) ?? [];
+      const sql = `insert into \`${table}\` (${fieldNames.map((f) => `\`${f}\``).join(",")}) values (${argValues.map(() => "?").join(",")})`;
+      return await runSql<T>(sql, argValues);
+    };
+
+  const update =
+    <T>(table: string, keyName: string, fields: string[]) =>
+    async (keyValue: any, updates: Partial<T>) => {
+      const filter = { [keyName]: keyValue };
+      const argNames = [keyName];
+      const updNames = intersection(fields, getArgNames(updates));
+      if (!updNames?.length) {
+        throw Error(`update object is not valid`);
+      }
+      const setClause = ` set ${updNames.map((n) => `\`${n}\`=?`).join(",")}`;
+      const whereClause = getWhereClause(argNames);
+      const sql = `update \`${table}\`  ${setClause} ${whereClause} `;
+      const argValues = getArgValues(filter, argNames) ?? [];
+      const updValues = getArgValues(updates, updNames) ?? [];
+      return await runSql<T>(sql, [...updValues, ...argValues]);
+    };
+
+  const del =
+    <T>(table: string, keyname: string) =>
+    async (keyValue: any) => {
+      const whereClause = ` where \`${keyname}\`= ? `;
+      const sql = `delete from \`${table}\` ${whereClause} `;
+      return await runSql<T>(sql, [keyValue]);
+    };
+
+  const execSp =
+    <A, T>(proc: string, ...argNames: string[]) =>
+    async (args: A) => {
+      const argValues = getArgValues(args, argNames) ?? [];
+      const argsPlaceholders = argNames?.length ? `(${argNames.map(() => "?").join(",")})` : "";
+      const sql = `call \`${proc}\` ${argsPlaceholders}`;
+      return await runSql<T>(sql, argValues);
+    };
+  return {
+    list,
+    execSp,
+    get,
+    update,
+    insert,
+    delete: del,
+  };
+}

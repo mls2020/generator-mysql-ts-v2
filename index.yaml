@@ -1,0 +1,8 @@
+scope:
+  webapi:
+    "dbApi/interfaces.ts": "dbApi/interfaces.ts.vm"
+    "dbApi/dbClient.ts": "dbApi/dbClient.ts.vm"
+    "dbApi/dbProxy.ts": "dbApi/dbProxy.ts.vm"
+    "dbApi/dbRouter.ts": "dbApi/dbRouter.ts.vm"
+    "dbApi/dbServices.ts": "dbApi/dbServices.ts.vm"
+    "dbApi/dbUtils.ts": "dbApi/dbUtils.ts.vm"

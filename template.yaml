@@ -1,0 +1,31 @@
+name: ""
+version: 1.0.0
+template: 'https://github.com/mls2020/generator-mysql-ts.git'
+plugins:
+  - mysql
+user:
+  tablename: user
+  config:
+    site_id: number
+tables:
+  "<table_name>": ## this key must be the sql table_name
+    columns:
+      "<column_name>": "<column options>"  ## table columns see below the possible column options
+      "<column_name>": "<column options>"  
+procedures:
+  "<procedure name>": ## this key must be the sql procedure name
+    parameters:
+      "<parameter name>": "parameter options"  ## procedure parameter name see below the possible column options
+      "<parameter name>": "parameter options"  
+    columns:
+      "<column_name>": "<column options>"  ## procedure columns see below the possible column options
+      "<column_name>": "<column options>"
+
+## AVAILABLE COLUMN OPTIONS:
+## string          
+## number          
+## boolean         
+
+## autoincrement   
+## primary         
+## notnull         
