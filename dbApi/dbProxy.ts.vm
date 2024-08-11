@@ -5,8 +5,8 @@ export type DbProxy = ReturnType<typeof createDbProxy>;
 
 function mapTable<T>(name: string, dbUtils: DbUtils, keyName: string, fields: string[]) {
   return {
-    list: dbUtils.list<T>(name),
-    get: dbUtils.get<T>(name),
+    list: dbUtils.list<T>(name, fields),
+    get: dbUtils.get<T>(name, fields),
     update: dbUtils.update<T>(name, keyName, fields),
     insert: dbUtils.insert<T>(name, fields),
     delete: dbUtils.delete<T>(name, keyName),

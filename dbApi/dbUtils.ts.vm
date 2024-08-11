@@ -22,7 +22,7 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
   };
 
   const getWhereClause = (argNames: string[] | undefined) => {
-    if (argNames) {
+    if (argNames?.length) {
       const strWhere = argNames.map((n)=> ` \`${n}\`=?`).join(" AND ")
       return  ` where ${strWhere}`
     } 
@@ -30,9 +30,9 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
   };
 
   const list =
-    <T>(table: string) =>
-    async (filter: Partial<T>, fields?: string[]) => {
-      const argNames = getArgNames(filter);
+    <T>(table: string, fields: string[]) =>
+    async (filter: Partial<T>) => {
+      const argNames = ingersection(fields,getArgNames(filter));
       const whereClause = getWhereClause(argNames);
       const fieldsClause = fields?.length ? fields.map((f) => `\`${f}\``).join(",") : "*";
       const sql = `select ${fieldsClause} from \`${table}\` ${whereClause} `;
@@ -41,9 +41,9 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
     };
 
   const get =
-    <T>(table: string) =>
-    async (filter: Partial<T>, fields?: string[]) => {
-      const ret = await list<T>(table)(filter, fields);
+    <T>(table: string, fields: string[]) =>
+    async (filter: Partial<T>) => {
+      const ret = await list<T>(table, fields)(filter);
       return {
         ...ret,
         data: ret.data[0],
