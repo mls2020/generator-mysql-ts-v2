@@ -1,4 +1,3 @@
-import { intersection } from "lodash";
 import { DbLogger, RunSql } from "./dbClient";
 
 type CreateDbUtils = {
