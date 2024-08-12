@@ -1,3 +1,4 @@
+
 import express from "express";
 import { DbLogger } from "./dbClient";
 import { DbProxy } from "./dbProxy";
@@ -18,7 +19,6 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
         const result = await func(itemArgs);
         res.json(result);
       } catch (error) {
-        logger.error(error);
         res.status(501).json(error);
       }
     });
@@ -31,7 +31,6 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
         const result = await func(itemArgs);
         res.json(result);
       } catch (error) {
-        logger.error(error);
         res.status(501).json(error);
       }
     });
@@ -45,7 +44,6 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
         const result = await func(req.params.id, itemArgs);
         res.json(result);
       } catch (error) {
-        logger.error(error);
         res.status(501).json(error);
       }
     });
@@ -57,7 +55,6 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
         const result = await func(req.params.id);
         res.json(result);
       } catch (error) {
-        logger.error(error);
         res.status(501).json(error);
       }
     });
@@ -74,7 +71,6 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
         const result = await func(itemArgs);
         res.json(result);
       } catch (error) {
-        logger.error(error);
         res.status(501).json(error);
       }
     });

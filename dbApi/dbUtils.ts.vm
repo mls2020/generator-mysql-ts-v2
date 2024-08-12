@@ -1,3 +1,4 @@
+
 import { DbLogger, RunSql } from "./dbClient";
 
 type CreateDbUtils = {
@@ -58,8 +59,6 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
     <T>(tableName: string, tableFields: string[]) =>
     async (filter: Partial<T>) => {
       const { names, values } = getNamesAndValues(filter, tableFields);
-      logger.info({ names });
-      logger.info({ values });
       const whereClause = getWhere(names, filter);
       const fieldsClause = "*"; // tableFields.length ? tableFields.map((f) => `\`${f}\``).join(",") : "*";
       const sql = `select ${fieldsClause} from \`${tableName}\` ${whereClause} `;
