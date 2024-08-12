@@ -6,44 +6,71 @@ type CreateDbUtils = {
   logger: DbLogger;
 };
 
+const sqlOper = {
+  EQUAL: " = ? ",
+  CONTAINS: " LIKE ? ",
+  GT: " > ? ",
+  GTE: " >= ? ",
+  LT: " < ? ",
+  LTE: " <= ? ",
+} as { [key: string]: string };
+
 export type DbUtils = ReturnType<typeof createDbUtils>;
 
-export function createDbUtils({ runSql, logger }: CreateDbUtils) {
-  const getArgNames = (filter: any) => {
-    if (Object.keys(filter ?? {}).length) {
-      const argNames = Object.keys(filter);
-      return argNames;
+const getNamesAndValues = (element: any, fields: string[], addNullValues = false) => {
+  // questa funzione ci garantisc l'ordinamento corretto tra campi e valori
+  let argFields = [] as string[];
+  let argValues = [] as any[];
+
+  for (const field of fields) {
+    const filterValue = element[field];
+    if (filterValue !== undefined) {
+      argFields.push(field);
+      argValues.push(filterValue);
+    } else if (addNullValues) {
+      argFields.push(field);
+      argValues.push(null);
     }
-    return undefined;
+  }
+  return {
+    names: argFields,
+    values: argValues,
   };
+};
 
-  const getArgValues = (filter: any, argNames: string[] | undefined) => {
-    return argNames?.map((k) => filter[k]);
-  };
+const getWhere = (validFields: string[], filter: any) => {
+  if (validFields.length === 0) {
+    return "";
+  }
+  let returnValue = " where ";
+  returnValue += validFields
+    .map((field) => {
+      const operatorKey = field + "Operator";
+      const operator = filter[operatorKey] ?? "EQUAL";
+      return field + sqlOper[operator];
+    })
+    .join(" AND ");
 
-  const getWhereClause = (argNames: string[] | undefined) => {
-    if (argNames?.length) {
-      const strWhere = argNames.map((n)=> ` \`${n}\`=?`).join(" AND ")
-      return  ` where ${strWhere}`
-    } 
-    return "" 
-  };
+  return returnValue;
+};
 
+export function createDbUtils({ runSql, logger }: CreateDbUtils) {
   const list =
-    <T>(table: string, fields: string[]) =>
+    <T>(tableName: string, tableFields: string[]) =>
     async (filter: Partial<T>) => {
-      const argNames = intersection(fields,getArgNames(filter));
-      const whereClause = getWhereClause(argNames);
-      const fieldsClause = fields?.length ? fields.map((f) => `\`${f}\``).join(",") : "*";
-      const sql = `select ${fieldsClause} from \`${table}\` ${whereClause} `;
-      const argValues = getArgValues(filter, argNames);
-      return await runSql<T>(sql, argValues ?? []);
+      const { names, values } = getNamesAndValues(filter, tableFields);
+      logger.info({ names });
+      logger.info({ values });
+      const whereClause = getWhere(names, filter);
+      const fieldsClause = "*"; // tableFields.length ? tableFields.map((f) => `\`${f}\``).join(",") : "*";
+      const sql = `select ${fieldsClause} from \`${tableName}\` ${whereClause} `;
+      return await runSql<T>(sql, values);
     };
 
   const get =
-    <T>(table: string, fields: string[]) =>
+    <T>(tableName: string, tableFields: string[]) =>
     async (filter: Partial<T>) => {
-      const ret = await list<T>(table, fields)(filter);
+      const ret = await list<T>(tableName, tableFields)(filter);
       return {
         ...ret,
         data: ret.data[0],
@@ -51,39 +78,32 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
     };
 
   const insert =
-    <T>(table: string, fields: string[]) =>
+    <T>(tableName: string, tableFields: string[]) =>
     async (element: Partial<T>) => {
-      const fieldNames = intersection(fields, getArgNames(element));
-      const argValues = getArgValues(element, fieldNames) ?? [];
-      const strFields =  fieldNames.map((f) => `\`${f}\``).join(",")
-      const strValues = argValues.map(() => "?").join(",")
-      const sql = `insert into \`${table}\` (${strFields}) values (${strValues})`;
-      return await runSql<T>(sql, argValues);
+      const { names, values } = getNamesAndValues(element, tableFields);
+      const strFields = names.map((f) => `\`${f}\``).join(",");
+      const strValues = values.map(() => "?").join(",");
+      const sql = `insert into \`${tableName}\` (${strFields}) values (${strValues})`;
+      return await runSql<T>(sql, values);
     };
 
   const update =
-    <T>(table: string, keyName: string, fields: string[]) =>
+    <T>(tableName: string, keyName: string, tableFields: string[]) =>
     async (keyValue: any, updates: Partial<T>) => {
       const filter = { [keyName]: keyValue };
-      const argNames = [keyName];
-      const updNames = intersection(fields, getArgNames(updates));
-      if (!updNames?.length) {
-        throw Error(`update object is not valid`);
-      
-      }
-      const strUpdNames = updNames.map((n) => `\`${n}\`=?`).join(",")
-      const setClause = ` set ${strUpdNames} `
-      const whereClause = getWhereClause(argNames);
-      const sql = `update \`${table}\`  ${setClause} ${whereClause} `;
-      const argValues = getArgValues(filter, argNames) ?? [];
-      const updValues = getArgValues(updates, updNames) ?? [];
-      return await runSql<T>(sql, [...updValues, ...argValues]);
+      const { names, values } = getNamesAndValues(updates, tableFields);
+
+      const strUpdNames = names.map((n) => `\`${n}\`=?`).join(",");
+      const setClause = ` set ${strUpdNames} `;
+      const whereClause = getWhere([keyName], filter);
+      const sql = `update \`${tableName}\`  ${setClause} ${whereClause} `;
+      return await runSql<T>(sql, [...values, keyValue]);
     };
 
   const del =
     <T>(table: string, keyname: string) =>
     async (keyValue: any) => {
-      const whereClause = ` where \`${keyname}\`= ? `;
+      const whereClause = getWhere([keyname], { [keyname]: keyValue });
       const sql = `delete from \`${table}\` ${whereClause} `;
       return await runSql<T>(sql, [keyValue]);
     };
@@ -91,10 +111,10 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
   const execSp =
     <A, T>(proc: string, ...argNames: string[]) =>
     async (args: A) => {
-      const argValues = getArgValues(args, argNames) ?? [];
-      const strArgsPlaceholders = argNames?.length ? argNames.map(() => "?").join(",") : ""
+      const { names, values } = getNamesAndValues(args, argNames, true);
+      const strArgsPlaceholders = names.length ? names.map(() => "?").join(",") : "";
       const sql = `call \`${proc}\` (${strArgsPlaceholders})`;
-      return await runSql<T>(sql, argValues);
+      return await runSql<T>(sql, values);
     };
   return {
     list,

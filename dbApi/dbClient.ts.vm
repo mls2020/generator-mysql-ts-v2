@@ -1,3 +1,4 @@
+
 import { isArray } from "lodash";
 import mysql from "mysql";
 
@@ -47,7 +48,7 @@ const createRunSql =
           logger.error(JSON.stringify(err));
           rej(err);
         }
-        const msgArgs = args??''
+        const msgArgs = args ?? "";
         const msg = `SQL | ${sql.trim()} | ${msgArgs}`;
         connection.query(sql, args, (err, rows) => {
           const endTime = performance.now();
@@ -55,6 +56,8 @@ const createRunSql =
           if (err) {
             logger.error(err);
             logger.error(`${msg} ${err.message} ${duration}ms`);
+            logger.error({ sql });
+            logger.error({ args });
             rej(err);
           } else {
             let data = [] as T[];
