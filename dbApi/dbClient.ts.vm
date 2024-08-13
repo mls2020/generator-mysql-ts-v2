@@ -54,7 +54,7 @@ const createRunSql =
           const endTime = performance.now();
           const duration = Math.round(endTime - startTime);
           if (err) {
-            logger.error(`❗️${msg} ${err.message} ${duration}ms`);
+            logger.error(`❗️${msg} ${err.message} ${duration} ms`);
             logger.trace({ ...err, sql, args });
             rej(err);
           } else {
@@ -78,9 +78,8 @@ const createRunSql =
               }
             }
 
-            const count = data?.length ?? result?.affectedRows ?? "no";
-            //logger.info({ isSelect, isResultArray, rows });
-            logger.debug(`✅ ${msg} | ${count} rows | ${duration} ms`);
+            const count = result?.affectedRows || data?.length || "no";
+            logger.debug(`✅ ${msg} | ${count} row${count !== 1 ? "s" : ""} | ${duration} ms`);
             res({
               data,
               result,

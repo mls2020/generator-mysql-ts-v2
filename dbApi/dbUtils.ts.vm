@@ -1,4 +1,3 @@
-
 import { DbLogger, RunSql } from "./dbClient";
 
 type CreateDbUtils = {
@@ -82,7 +81,24 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
       const strFields = names.map((f) => `\`${f}\``).join(",");
       const strValues = values.map(() => "?").join(",");
       const sql = `insert into \`${tableName}\` (${strFields}) values (${strValues})`;
-      return await runSql<T>(sql, values);
+      const runSqlResult = await runSql<T>(sql, values);
+      return {
+        insertId: runSqlResult.result.insertId,
+        sql: runSqlResult.sql,
+        args: runSqlResult.args,
+      };
+    };
+
+  const insertAndGet =
+    <T>(tableName: string, tableFields: string[], keyName: string) =>
+    async (element: Partial<T>) => {
+      const fnInsert = insert(tableName, tableFields);
+      const fnGet = get(tableName, tableFields);
+      const data = await fnInsert(element);
+      const filter = { [keyName]: data.insertId };
+      return (await fnGet(filter)) as {
+        data: T;
+      };
     };
 
   const update =
@@ -114,12 +130,14 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
       const sql = `call \`${proc}\` (${strArgsPlaceholders})`;
       return await runSql<T>(sql, values);
     };
+
   return {
     list,
     execSp,
     get,
     update,
     insert,
+    insertAndGet,
     delete: del,
   };
 }
