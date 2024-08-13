@@ -51,7 +51,7 @@ const createRunSql =
         const msg = `${sql.trim()} ${msgArgs}`;
         connection.query(sql, args, (err, rows) => {
           const endTime = performance.now();
-          const duration = `${Math.round(endTime - startTime)} ms`;
+          const duration = String({Math.round(endTime - startTime)}) + ' ms';
           if (err) {
             logger.error(`❗️ SQL ${duration.padStart(8)} ${"-".padStart(6)} ${msg} ${err.message}`);
             logger.trace({ ...err, sql, args });
