@@ -77,7 +77,7 @@ const createRunSql =
               }
             }
 
-            const count = `${result?.affectedRows || data?.length || "0"}`;
+            const count = String(result?.affectedRows || data?.length || "0")
             logger.debug(`✅ SQL ${duration.padStart(8)} ${count.padStart(6)} ${msg}`);
             res({
               data,
