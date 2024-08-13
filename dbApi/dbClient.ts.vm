@@ -79,7 +79,8 @@ const createRunSql =
             }
 
             const count = result?.affectedRows || data?.length || "no";
-            logger.debug(`✅ ${msg} | ${count} row${count !== 1 ? "s" : ""} | ${duration} ms`);
+            const rowsSuffix = count === 1 ? '':'s'
+            logger.debug(`✅ ${msg} | ${count} ${rowsSuffix} | ${duration} ms`);
             res({
               data,
               result,
