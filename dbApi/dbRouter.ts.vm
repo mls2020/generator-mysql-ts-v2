@@ -1,6 +1,7 @@
-import express from "express";
-import { DbLogger } from "./dbClient";
-import { DbProxy } from "./dbProxy";
+
+import express from 'express';
+import { DbLogger } from './dbClient';
+import { DbProxy } from './dbProxy';
 
 export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: DbLogger }) {
   //TABLES AUTOMAPPING
@@ -8,8 +9,10 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
   const tableNames = Object.keys(dbProxy.tables);
 
   for (const tableName of tableNames) {
-    // LIST
     const mainPath = `/v1/${tableName}`;
+    const mainPathById = `${mainPath}/:id`;
+
+    // LIST
     logger.debug(`registering: GET ${mainPath}`);
     router.get(mainPath, async (req, res) => {
       const itemArgs = { ...req.query, ...req.params };
@@ -22,7 +25,20 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
         res.status(501).json(error);
       }
     });
-
+    // GET by Id
+    logger.debug(`registering: GET ${mainPathById}`);
+    router.get(mainPathById, async (req, res) => {
+      try {
+        const table = (dbProxy as any).tables[tableName];
+        const itemArgs = { [table.keyName]: req.params.id };
+        const func = table.get;
+        const result = await func(itemArgs);
+        res.json(result);
+      } catch (error) {
+        logger.trace(error);
+        res.status(501).json(error);
+      }
+    });
     logger.debug(`registering: POST ${mainPath}`);
     router.post(mainPath, async (req, res) => {
       const itemArgs = req.body;
@@ -36,9 +52,8 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
       }
     });
 
-    const putPath = `${mainPath}/:id`;
-    logger.debug(`registering: PUT ${putPath}`);
-    router.put(putPath, async (req, res) => {
+    logger.debug(`registering: PUT ${mainPathById}`);
+    router.put(mainPathById, async (req, res) => {
       const itemArgs = req.body;
       try {
         const func = (dbProxy as any).tables[tableName].update;
@@ -50,8 +65,8 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
       }
     });
 
-    logger.debug(`registering: DELETE ${putPath}`);
-    router.delete(putPath, async (req, res) => {
+    logger.debug(`registering: DELETE ${mainPathById}`);
+    router.delete(mainPathById, async (req, res) => {
       try {
         const func = (dbProxy as any).tables[tableName].delete;
         const result = await func(req.params.id);
