@@ -77,7 +77,8 @@ function createRunSql({ pool, logger, createConn }: CreateRunSql) {
   return async <T>(sql: string, args: any[], usePool = true) => {
     const startTime = performance.now();
     return new Promise<{ data: T[]; sql: string; args: string[]; result: any }>((res, rej) => {
-      provideConnection({ pool, logger, createConn }, usePool, (err, connection, close) => {
+      provideConnection({ pool, logger, createConn }, usePool: boolean, (err, connection, close) => {
+
         const msgArgs = args ?? '';
         const msg = `${sql.trim()} ${msgArgs} ${usePool ? '🎱' : ''}`;
         connection.query(sql, args, (err, rows) => {
