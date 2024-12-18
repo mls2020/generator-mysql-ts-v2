@@ -1,5 +1,6 @@
-import { isArray } from "lodash";
-import mysql from "mysql";
+
+import { isArray } from 'lodash';
+import mysql from 'mysql';
 
 export type DbLogger = {
   info: (...msg: any[]) => void;
@@ -16,11 +17,23 @@ type CreateDbClientArgs = {
   password: string;
   charset: string;
   logger: DbLogger;
+  connectionLimit?: number;
+  connectTimeout?: number;
 };
 
-export function createDbClient({ host, user, database, password, charset, logger }: CreateDbClientArgs) {
+export function createDbClient({
+  host,
+  user,
+  database,
+  password,
+  charset,
+  logger,
+  connectTimeout = 10000,
+  connectionLimit = 20,
+}: CreateDbClientArgs) {
   const pool = mysql.createPool({
-    connectionLimit: 10,
+    connectionLimit,
+    connectTimeout,
     multipleStatements: true,
     host,
     user,
@@ -29,38 +42,56 @@ export function createDbClient({ host, user, database, password, charset, logger
     charset,
   });
 
+  const createConn = () => mysql.createConnection({ host, user, password, database, charset, multipleStatements: true });
+
   return {
     pool,
-    runSql: createRunSql({ pool, logger }),
+    runSql: createRunSql({ pool, logger, createConn }),
   };
 }
 
+type CreateRunSql = {
+  pool: mysql.Pool;
+  logger: DbLogger;
+  createConn: () => mysql.Connection;
+};
+
 export type RunSql = ReturnType<typeof createRunSql>;
 
-const createRunSql =
-  ({ pool, logger }: { pool: mysql.Pool; logger: DbLogger }) =>
-  async <T>(sql: string, args: any[]) => {
+function provideConnection(cfg: CreateRunSql, usePool: boolean, cb: (err: any, connection: mysql.Connection, close: () => void) => void) {
+  if (usePool) {
+    cfg.pool.getConnection((err, connection) => {
+      cb(err, connection, () => connection.release());
+    });
+  } else {
+    try {
+      const connection = cfg.createConn();
+      cb(undefined, connection, () => connection.end());
+    } catch (error) {
+      cfg.logger.error(error);
+    }
+  }
+}
+
+function createRunSql({ pool, logger, createConn }: CreateRunSql) {
+  return async <T>(sql: string, args: any[], usePool = true) => {
     const startTime = performance.now();
     return new Promise<{ data: T[]; sql: string; args: string[]; result: any }>((res, rej) => {
-      pool.getConnection((err, connection) => {
-        if (err) {
-          logger.error(err);
-          rej(err);
-        }
-        const msgArgs = args ?? "";
-        const msg = `${sql.trim()} ${msgArgs}`;
+      provideConnection({ pool, logger, createConn }, usePool, (err, connection, close) => {
+        const msgArgs = args ?? '';
+        const msg = `${sql.trim()} ${msgArgs} ${usePool ? '🎱' : ''}`;
         connection.query(sql, args, (err, rows) => {
           const endTime = performance.now();
-          const duration = String(Math.round(endTime - startTime)) + " ms";
+          const duration = String(Math.round(endTime - startTime)) + ' ms';
           if (err) {
-            logger.error(`❗️ SQL ${duration.padStart(8)} ${"-".padStart(6)} ${msg} ${err.message}`);
+            logger.error(`❗️ SQL ${duration.padStart(8)} ${'-'.padStart(6)} ${msg} ${err.message}`);
             logger.trace({ ...err, sql, args });
             rej(err);
           } else {
             let data = [] as T[];
             let result = {} as any;
             const isResultArray = isArray(rows);
-            const isSelect = sql.trim().toLowerCase().startsWith("select");
+            const isSelect = sql.trim().toLowerCase().startsWith('select');
             if (isSelect) {
               if (isResultArray) {
                 data = rows;
@@ -77,7 +108,7 @@ const createRunSql =
               }
             }
 
-            const count = String(result?.affectedRows || data?.length || "0")
+            const count = String(result?.affectedRows || data?.length || '0');
             logger.trace(` ✔ SQL ${duration.padStart(8)} ${count.padStart(6)} ${msg}`);
             res({
               data,
@@ -86,8 +117,10 @@ const createRunSql =
               args,
             });
           }
-          connection.release();
         });
+        logger.trace('end connection');
+        close();
       });
     });
   };
+}

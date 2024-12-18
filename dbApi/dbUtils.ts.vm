@@ -128,7 +128,7 @@ export function createDbUtils({ runSql, logger }: CreateDbUtils) {
       const { names, values } = getNamesAndValues(args, argNames, true);
       const strArgsPlaceholders = names.length ? names.map(() => "?").join(",") : "";
       const sql = `call \`${proc}\` (${strArgsPlaceholders})`;
-      return await runSql<T>(sql, values);
+      return await runSql<T>(sql, values, true);
     };
 
   return {
