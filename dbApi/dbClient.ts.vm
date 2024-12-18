@@ -80,7 +80,8 @@ function createRunSql({ pool, logger, createConn }: CreateRunSql) {
       provideConnection({ pool, logger, createConn }, usePool: boolean, (err, connection, close) => {
 
         const msgArgs = args ?? '';
-        const msg = `${sql.trim()} ${msgArgs} ${usePool ? '🎱' : ''}`;
+        const pool = usePool ? '🎱' : ''
+        const msg = `${sql.trim()} ${msgArgs} ${pool}`;
         connection.query(sql, args, (err, rows) => {
           const endTime = performance.now();
           const duration = String(Math.round(endTime - startTime)) + ' ms';
