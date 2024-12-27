@@ -47,7 +47,7 @@ const getWhere = (validFields: string[], filter: any) => {
     .map((field) => {
       const operatorKey = field + 'Operator';
       const operator = filter[operatorKey] ?? 'EQUAL';
-      return field + sqlOper[operator];
+      return  '`field`' + sqlOper[operator];
     })
     .join(' AND ');
 
