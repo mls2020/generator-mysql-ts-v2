@@ -17,6 +17,7 @@ function mapTable<T>(name: string, dbUtils: DbUtils, keyName: string, fields: st
 
 export function createDbProxy({ dbUtils }: { dbUtils: DbUtils }) {
   return {
+    runSql: dbUtils.runSql,
     tables: {
       #foreach($table in $tables)
         ${table.name}: mapTable<I.${table.name}DTO>("${table.name}", dbUtils, 
