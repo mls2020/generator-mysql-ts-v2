@@ -1,5 +1,4 @@
 
-import { isArray } from 'lodash';
 import mysql from 'mysql';
 
 export type DbLogger = {
@@ -92,7 +91,7 @@ function createRunSql({ pool, logger, createConn }: CreateRunSql) {
           } else {
             let data = [] as T[];
             let result = {} as any;
-            const isResultArray = isArray(rows);
+            const isResultArray = Array.isArray(rows);
             const isSelect = sql.trim().toLowerCase().startsWith('select');
             if (isSelect) {
               if (isResultArray) {
