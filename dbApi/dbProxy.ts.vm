@@ -8,6 +8,7 @@ function mapTable<T>(name: string, dbUtils: DbUtils, keyName: string, fields: st
     list: dbUtils.list<T>(name, fields),
     get: dbUtils.get<T>(name, fields),
     update: dbUtils.update<T>(name, keyName, fields),
+    updateAndGet: dbUtils.updateAndGet<T>(name, keyName, fields),
     insert: dbUtils.insert<T>(name, fields),
     delete: dbUtils.delete<T>(name, keyName),
     insertAndGet: dbUtils.insertAndGet<T>(name, fields, keyName),
