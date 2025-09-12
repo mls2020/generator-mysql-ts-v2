@@ -127,6 +127,22 @@ export function createDbUtils({ runSql }: CreateDbUtils) {
       return await runSql<T>(sql, [...values, ...fltValues]);
     };
 
+ const updateAndGet =
+    <T>(tableName: string, keyName: string, tableFields: string[]) =>
+    async (keyValue: any, updates: Partial<T>) => {
+      const filter = { [keyName]: keyValue };
+      const { names, values } = getNamesAndValues(updates, tableFields);
+      const strUpdNames = names.map((n) => `\`${n}\`=?`).join(",");
+      const setClause = ` set ${strUpdNames} `;
+      const whereClause = getWhere([keyName], filter);
+      const sql = `update \`${tableName}\`  ${setClause} ${whereClause} `;
+      const fnGet = get(tableName, tableFields);
+      await runSql<T>(sql, [...values, keyValue]);
+      return (await fnGet(filter)) as {
+        data: T;
+      };
+    };
+
   const del =
     <T>(table: string, keyname: string) =>
     async (keyValue: any) => {
@@ -149,6 +165,7 @@ export function createDbUtils({ runSql }: CreateDbUtils) {
     execSp,
     get,
     update,
+    updateAndGet,
     insert,
     insertAndGet,
     updateMany,
