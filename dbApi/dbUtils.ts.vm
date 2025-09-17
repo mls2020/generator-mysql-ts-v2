@@ -24,12 +24,17 @@ const getNamesAndValues = (element: any, fields: string[], addNullValues = false
 
   for (const field of fields) {
     const filterValue = element[field];
-    if (filterValue !== undefined) {
-      argFields.push(field);
-      argValues.push(filterValue);
-    } else if (addNullValues) {
+    if (fieldValue === undefined) {
+      if (addNullValues) {
+        argFields.push(field);
+        argValues.push(null);
+      }
+    } else if (fieldValue === null) {
       argFields.push(field);
       argValues.push(null);
+    } else {
+      argFields.push(field);
+      argValues.push(fieldValue);
     }
   }
   return {
