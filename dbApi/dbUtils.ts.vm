@@ -23,7 +23,7 @@ const getNamesAndValues = (element: any, fields: string[], addNullValues = false
   let argValues = [] as any[];
 
   for (const field of fields) {
-    const filterValue = element[field];
+    const fieldValue = element[field];
     if (fieldValue === undefined) {
       if (addNullValues) {
         argFields.push(field);
