@@ -19,6 +19,13 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
       try {
         const func = (dbProxy as any).tables[tableName].list;
         const result = await func(itemArgs);
+        // Notify WebSocket clients for kvstore updates
+        if (tableName === 'kvstore' && result.data && req.app.locals.wsService) {
+          const wsService = req.app.locals.wsService;
+          const excludeSocketId = req.headers['x-socket-id'] as string | undefined;
+          wsService.notifyKVUpdate(result.data.key, result.data.site_id || 0, excludeSocketId);
+        }
+
         res.json(result);
       } catch (error) {
         logger.trace(error);
@@ -58,6 +65,12 @@ export function createDbRouter({ dbProxy, logger }: { dbProxy: DbProxy; logger: 
       try {
         const func = (dbProxy as any).tables[tableName].updateAndGet;
         const result = await func(req.params.id, itemArgs);
+        // Notify WebSocket clients for kvstore updates
+        if (tableName === 'kvstore' && result.data && req.app.locals.wsService) {
+          const wsService = req.app.locals.wsService;
+          const excludeSocketId = req.headers['x-socket-id'] as string | undefined;
+          wsService.notifyKVUpdate(result.data.key, result.data.site_id || 0, excludeSocketId);
+        }
         res.json(result);
       } catch (error) {
         logger.trace(error);
