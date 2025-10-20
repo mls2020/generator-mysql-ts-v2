@@ -12,6 +12,7 @@ let query = (params:any)=> Object.keys(params)
 export class RestClient {
     private rootUrl:string;
     private token:string = '';
+    private socketId:string = '';
     private _axios: AxiosInstance;
 
     constructor(rootUrl:string,timeout=10000) {
@@ -28,13 +29,20 @@ export class RestClient {
 
     private fetch<T>(verb: 'GET' | 'PUT' | 'POST' | 'DELETE', url: string, qs: any | undefined, body: any | undefined) {
         const queryString = qs ? query(qs) : ''
+        const headers: any = {
+            'token': this.token
+        };
+
+        // Add socket ID if available
+        if (this.socketId) {
+            headers['X-Socket-ID'] = this.socketId;
+        }
+
         return this._axios({
             url: '/api/v1' + url + '?' + queryString,
             method: verb,
             data: body,
-            headers: {
-                'token': this.token
-            }
+            headers
         }).then(r => {
             return r.data as T
         })
@@ -55,6 +63,7 @@ export class RestClient {
     }
 
     public setToken = (token:string) => this.token=token;
+    public setSocketId = (socketId:string) => this.socketId=socketId;
 
 #foreach($table in $tables)
 //Table $table.name
